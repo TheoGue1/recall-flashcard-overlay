@@ -8,6 +8,10 @@ import { MandatoryBanner } from './components/MandatoryBanner';
 import { EmptyState } from './components/EmptyState';
 import { parseCsvToCards } from './lib/csv';
 import { createCard, getStudyQueue, scheduleCard } from './lib/scheduler';
+import {
+  decrementMandatorySession,
+  isMandatorySessionActive,
+} from './lib/session';
 import { installMockApi } from './lib/mockApi';
 import type { AppData, Rating } from './lib/types';
 
@@ -49,8 +53,7 @@ export default function App() {
     };
   }, []);
 
-  const mandatoryMode =
-    !!data?.session.mandatoryActive && (data?.session.mandatoryRemaining ?? 0) > 0;
+  const mandatoryMode = data ? isMandatorySessionActive(data.session) : false;
 
   const queue = useMemo(() => {
     if (!data) return [];
@@ -67,16 +70,7 @@ export default function App() {
       const updated = scheduleCard(current, rating, data.settings);
       const cards = data.cards.map((c) => (c.id === updated.id ? updated : c));
 
-      let session = { ...data.session };
-      if (session.mandatoryActive && session.mandatoryRemaining > 0) {
-        session = {
-          ...session,
-          mandatoryRemaining: session.mandatoryRemaining - 1,
-        };
-        if (session.mandatoryRemaining <= 0) {
-          session.mandatoryActive = false;
-        }
-      }
+      const session = decrementMandatorySession(data.session);
 
       await persist({ ...data, cards, session });
       setFlipped(false);
@@ -162,7 +156,7 @@ export default function App() {
         }}
       />
 
-      {data.session.mandatoryActive && data.session.mandatoryRemaining > 0 && (
+      {isMandatorySessionActive(data.session) && (
         <MandatoryBanner
           remaining={data.session.mandatoryRemaining}
           total={mandatoryTotal}

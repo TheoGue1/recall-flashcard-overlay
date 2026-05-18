@@ -9,6 +9,11 @@ const {
 } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const {
+  shouldHideWindowAfterSave,
+  shouldBlockWindowClose,
+  shouldShowWindowOnLaunch,
+} = require('./session.cjs');
 
 const isDev = process.env.NODE_ENV === 'development';
 let mainWindow = null;
@@ -65,7 +70,7 @@ function createWindow() {
     y: height - 540,
     frame: false,
     transparent: true,
-    alwaysOnTop: true,
+    alwaysOnTop: false,
     resizable: true,
     skipTaskbar: false,
     show: false,
@@ -93,12 +98,15 @@ function createWindow() {
   }
 
   mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
+    const data = loadData();
+    if (shouldShowWindowOnLaunch(data.session)) {
+      mainWindow.show();
+    }
   });
 
   mainWindow.on('close', (e) => {
     const data = loadData();
-    if (data.session.mandatoryActive && data.session.mandatoryRemaining > 0) {
+    if (shouldBlockWindowClose(data.session)) {
       e.preventDefault();
       mainWindow.show();
       mainWindow.focus();
@@ -115,10 +123,7 @@ function createTray() {
     require('electron').Menu.buildFromTemplate([
       {
         label: 'Show',
-        click: () => {
-          mainWindow?.show();
-          mainWindow?.focus();
-        },
+        click: () => showStudyWindow(),
       },
       {
         label: 'Study now',
@@ -137,10 +142,7 @@ function createTray() {
       },
     ])
   );
-  tray.on('double-click', () => {
-    mainWindow?.show();
-    mainWindow?.focus();
-  });
+  tray.on('double-click', () => showStudyWindow());
 }
 
 function resetTimer() {
@@ -152,6 +154,16 @@ function resetTimer() {
   timerHandle = setInterval(() => triggerMandatorySession(), ms);
 }
 
+function showStudyWindow() {
+  if (!mainWindow) return;
+  mainWindow.show();
+  mainWindow.focus();
+}
+
+function hideStudyWindow() {
+  mainWindow?.hide();
+}
+
 function triggerMandatorySession() {
   const data = loadData();
   data.session.mandatoryActive = true;
@@ -160,8 +172,7 @@ function triggerMandatorySession() {
   saveData(data);
 
   if (mainWindow) {
-    mainWindow.show();
-    mainWindow.focus();
+    showStudyWindow();
     mainWindow.webContents.send('timer-fired', {
       remaining: data.session.mandatoryRemaining,
     });
@@ -172,8 +183,12 @@ function registerIpc() {
   ipcMain.handle('get-data', () => loadData());
 
   ipcMain.handle('save-data', (_, payload) => {
+    const prev = loadData();
     saveData(payload);
     resetTimer();
+    if (shouldHideWindowAfterSave(prev.session, payload.session)) {
+      hideStudyWindow();
+    }
     return true;
   });
 
@@ -189,10 +204,10 @@ function registerIpc() {
   ipcMain.handle('minimize-window', () => mainWindow?.minimize());
   ipcMain.handle('close-window', () => {
     const data = loadData();
-    if (data.session.mandatoryActive && data.session.mandatoryRemaining > 0) {
+    if (shouldBlockWindowClose(data.session)) {
       return { blocked: true };
     }
-    mainWindow?.hide();
+    hideStudyWindow();
     return { blocked: false };
   });
 }
@@ -206,7 +221,7 @@ app.whenReady().then(() => {
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
-    else mainWindow?.show();
+    else showStudyWindow();
   });
 });
 

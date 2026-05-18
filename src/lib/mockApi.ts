@@ -75,7 +75,13 @@ export function installMockApi() {
       });
     },
     minimize: async () => {},
-    close: async () => ({ blocked: false }),
+    close: async () => {
+      const d = load();
+      if (d.session.mandatoryActive && d.session.mandatoryRemaining > 0) {
+        return { blocked: true };
+      }
+      return { blocked: false };
+    },
     onTimerFired: (cb) => {
       listeners.add(cb);
       resetTimer((remaining) => listeners.forEach((l) => l({ remaining })));
