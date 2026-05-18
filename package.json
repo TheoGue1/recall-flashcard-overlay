@@ -1,0 +1,76 @@
+{
+  "name": "recall-flashcard-overlay",
+  "version": "1.0.0",
+  "description": "Windows overlay flashcard app with spaced repetition (Anki-style SM-2)",
+  "author": "Theo",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/theo13015/recall-flashcard-overlay.git"
+  },
+  "bugs": {
+    "url": "https://github.com/theo13015/recall-flashcard-overlay/issues"
+  },
+  "homepage": "https://github.com/theo13015/recall-flashcard-overlay#readme",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "keywords": [
+    "flashcards",
+    "spaced-repetition",
+    "anki",
+    "electron",
+    "windows",
+    "overlay",
+    "sm-2"
+  ],
+  "main": "electron/main.cjs",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
+    "build": "tsc -b && vite build",
+    "start": "electron .",
+    "dist": "npm run build && electron-builder --win"
+  },
+  "dependencies": {
+    "papaparse": "^5.5.3",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@tailwindcss/vite": "^4.1.8",
+    "@types/node": "^24.12.3",
+    "@types/papaparse": "^5.3.16",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.2.0",
+    "cross-env": "^7.0.3",
+    "electron": "^36.4.0",
+    "electron-builder": "^26.0.12",
+    "eslint": "^10.3.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.6.0",
+    "tailwindcss": "^4.1.8",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.59.2",
+    "vite": "^6.0.3",
+    "wait-on": "^8.0.3"
+  },
+  "build": {
+    "appId": "com.recall.flashcard-overlay",
+    "productName": "Recall",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": ["nsis"]
+    }
+  }
+}
