@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { sanitizeSettings, timerIntervalMs, timerSettingsChanged } from './timer.cjs';
+import {
+  configureTimerLimits,
+  sanitizeSettings,
+  timerIntervalMs,
+  timerSettingsChanged,
+} from './timer.cjs';
+
+configureTimerLimits(false);
 
 const defaults = {
   timerEnabled: true,
@@ -22,11 +29,18 @@ describe('timerIntervalMs', () => {
 });
 
 describe('sanitizeSettings', () => {
-  it('clamps timer interval to 5–240 minutes', () => {
+  it('clamps timer interval to 5–240 minutes in production', () => {
+    configureTimerLimits(false);
     expect(sanitizeSettings({ timerIntervalMinutes: 51111 }, defaults).timerIntervalMinutes).toBe(
       240
     );
     expect(sanitizeSettings({ timerIntervalMinutes: 1 }, defaults).timerIntervalMinutes).toBe(5);
+  });
+
+  it('allows 1-minute interval in development', () => {
+    configureTimerLimits(true);
+    expect(sanitizeSettings({ timerIntervalMinutes: 1 }, defaults).timerIntervalMinutes).toBe(1);
+    configureTimerLimits(false);
   });
 });
 

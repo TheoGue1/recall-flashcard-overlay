@@ -1,8 +1,20 @@
 /** Node setTimeout/setInterval max delay (32-bit signed ms). */
 const MAX_TIMEOUT_MS = 2_147_483_647;
 
-const MIN_TIMER_MINUTES = 5;
 const MAX_TIMER_MINUTES = 240;
+const PROD_MIN_TIMER_MINUTES = 5;
+const DEV_MIN_TIMER_MINUTES = 1;
+
+let minTimerMinutes = PROD_MIN_TIMER_MINUTES;
+
+function getMinTimerMinutes() {
+  return minTimerMinutes;
+}
+
+/** @param {boolean} isDev */
+function configureTimerLimits(isDev) {
+  minTimerMinutes = isDev ? DEV_MIN_TIMER_MINUTES : PROD_MIN_TIMER_MINUTES;
+}
 
 function clampInt(value, min, max, fallback) {
   const n = Math.floor(Number(value));
@@ -27,7 +39,7 @@ function sanitizeSettings(settings, defaults) {
     timerEnabled: settings?.timerEnabled !== false,
     timerIntervalMinutes: clampInt(
       settings?.timerIntervalMinutes,
-      MIN_TIMER_MINUTES,
+      getMinTimerMinutes(),
       MAX_TIMER_MINUTES,
       defaults.timerIntervalMinutes
     ),
@@ -84,7 +96,7 @@ function sanitizeSession(session, defaults) {
 function timerIntervalMs(minutes) {
   const clamped = clampInt(
     minutes,
-    MIN_TIMER_MINUTES,
+    getMinTimerMinutes(),
     MAX_TIMER_MINUTES,
     30
   );
@@ -105,7 +117,10 @@ function timerSettingsChanged(prev, next) {
 
 module.exports = {
   MAX_TIMEOUT_MS,
-  MIN_TIMER_MINUTES,
+  PROD_MIN_TIMER_MINUTES,
+  DEV_MIN_TIMER_MINUTES,
+  getMinTimerMinutes,
+  configureTimerLimits,
   MAX_TIMER_MINUTES,
   sanitizeSettings,
   sanitizeSession,

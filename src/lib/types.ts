@@ -44,6 +44,7 @@ export interface FlashApi {
   pickCsv: () => Promise<string | null>;
   minimize: () => Promise<void>;
   close: () => Promise<{ blocked: boolean }>;
+  triggerStudyBreak: () => Promise<boolean>;
   onTimerFired: (cb: (payload: { remaining: number }) => void) => () => void;
   onMandatoryBlocked: (cb: () => void) => () => void;
 }

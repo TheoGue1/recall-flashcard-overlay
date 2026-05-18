@@ -198,6 +198,7 @@ export default function App() {
           onImport={handleImport}
           onAddCard={() => setView('add')}
           onBack={() => setView('study')}
+          onTriggerStudyBreak={() => void api?.triggerStudyBreak()}
         />
       )}
 

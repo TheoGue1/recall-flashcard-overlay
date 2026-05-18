@@ -124,5 +124,20 @@ export function installMockApi() {
       return () => listeners.delete(cb);
     },
     onMandatoryBlocked: () => () => {},
+    triggerStudyBreak: async () => {
+      const d = load();
+      const next = normalize({
+        ...d,
+        session: {
+          ...d.session,
+          mandatoryActive: true,
+          mandatoryRemaining: d.settings.timerCardCount,
+          lastTimerFired: Date.now(),
+        },
+      });
+      save(next);
+      notifyTimer(next.session.mandatoryRemaining);
+      return true;
+    },
   };
 }

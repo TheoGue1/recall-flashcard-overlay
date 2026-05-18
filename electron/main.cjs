@@ -19,6 +19,7 @@ const {
   sanitizeSession,
   timerIntervalMs,
   timerSettingsChanged,
+  configureTimerLimits,
 } = require('./timer.cjs');
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -231,6 +232,11 @@ function registerIpc() {
   });
 
   ipcMain.handle('minimize-window', () => mainWindow?.minimize());
+  ipcMain.handle('trigger-study-break', () => {
+    triggerMandatorySession();
+    return true;
+  });
+
   ipcMain.handle('close-window', () => {
     const data = loadData();
     if (shouldBlockWindowClose(data.session)) {
@@ -242,6 +248,7 @@ function registerIpc() {
 }
 
 app.whenReady().then(() => {
+  configureTimerLimits(isDev);
   dataPath = path.join(app.getPath('userData'), 'flashcards.json');
   registerIpc();
   createWindow();

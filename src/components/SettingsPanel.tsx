@@ -1,4 +1,5 @@
 import type { AppSettings } from '../lib/types';
+import { getMinTimerMinutes } from '../lib/timer';
 
 const Box = 'div' as const;
 
@@ -8,6 +9,7 @@ interface SettingsPanelProps {
   onImport: () => void;
   onAddCard: () => void;
   onBack: () => void;
+  onTriggerStudyBreak?: () => void;
 }
 
 export function SettingsPanel({
@@ -16,7 +18,10 @@ export function SettingsPanel({
   onImport,
   onAddCard,
   onBack,
+  onTriggerStudyBreak,
 }: SettingsPanelProps) {
+  const minTimerMinutes = getMinTimerMinutes();
+
   const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     onChange({ ...settings, [key]: value });
   };
@@ -51,13 +56,13 @@ export function SettingsPanel({
           Remind every (minutes)
           <input
             type="number"
-            min={5}
+            min={minTimerMinutes}
             max={240}
             value={settings.timerIntervalMinutes}
             onChange={(e) =>
               update(
                 'timerIntervalMinutes',
-                Math.min(240, Math.max(5, Number(e.target.value)))
+                Math.min(240, Math.max(minTimerMinutes, Number(e.target.value)))
               )
             }
             className="mt-1 w-full px-3 py-2 rounded-[var(--radius-btn)] bg-white/5 border border-[var(--color-border)] text-sm"
@@ -76,6 +81,21 @@ export function SettingsPanel({
             className="mt-1 w-full px-3 py-2 rounded-[var(--radius-btn)] bg-white/5 border border-[var(--color-border)] text-sm"
           />
         </label>
+        {onTriggerStudyBreak && (
+          <button
+            type="button"
+            onClick={onTriggerStudyBreak}
+            className="mt-3 w-full py-2.5 rounded-[var(--radius-btn)] border border-[var(--color-again)] text-sm text-[var(--color-again)] hover:bg-[var(--color-again)]/10"
+          >
+            Start study break now
+          </button>
+        )}
+        {import.meta.env.DEV && (
+          <p className="text-[10px] text-[var(--color-text-dim)] mt-2">
+            Dev: reminder interval can be as low as {minTimerMinutes} minute. Use the button above
+            to test without waiting.
+          </p>
+        )}
       </section>
 
       <section className="mb-4">

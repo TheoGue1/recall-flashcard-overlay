@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('flashApi', {
   pickCsv: () => ipcRenderer.invoke('pick-csv'),
   minimize: () => ipcRenderer.invoke('minimize-window'),
   close: () => ipcRenderer.invoke('close-window'),
+  triggerStudyBreak: () => ipcRenderer.invoke('trigger-study-break'),
   onTimerFired: (cb) => {
     const handler = (_, payload) => cb(payload);
     ipcRenderer.on('timer-fired', handler);

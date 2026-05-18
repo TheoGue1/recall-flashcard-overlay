@@ -1,8 +1,14 @@
 import type { AppSettings, AppSession } from './types';
 
 export const MAX_TIMEOUT_MS = 2_147_483_647;
-export const MIN_TIMER_MINUTES = 5;
+export const PROD_MIN_TIMER_MINUTES = 5;
+export const DEV_MIN_TIMER_MINUTES = 1;
 export const MAX_TIMER_MINUTES = 240;
+
+/** Minimum reminder interval (1 min in Vite dev, 5 min in production builds). */
+export function getMinTimerMinutes(): number {
+  return import.meta.env.DEV ? DEV_MIN_TIMER_MINUTES : PROD_MIN_TIMER_MINUTES;
+}
 
 function clampInt(value: unknown, min: number, max: number, fallback: number): number {
   const n = Math.floor(Number(value));
@@ -26,7 +32,7 @@ export function sanitizeSettings(
     timerEnabled: settings.timerEnabled !== false,
     timerIntervalMinutes: clampInt(
       settings.timerIntervalMinutes,
-      MIN_TIMER_MINUTES,
+      getMinTimerMinutes(),
       MAX_TIMER_MINUTES,
       defaults.timerIntervalMinutes
     ),
@@ -66,7 +72,7 @@ export function sanitizeSession(
 }
 
 export function timerIntervalMs(minutes: number): number {
-  const clamped = clampInt(minutes, MIN_TIMER_MINUTES, MAX_TIMER_MINUTES, 30);
+  const clamped = clampInt(minutes, getMinTimerMinutes(), MAX_TIMER_MINUTES, 30);
   const ms = clamped * 60 * 1000;
   return Math.min(ms, MAX_TIMEOUT_MS);
 }
