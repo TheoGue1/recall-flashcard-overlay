@@ -63,6 +63,10 @@ export default function App() {
   const current = queue[0] ?? null;
   const dueCount = queue.length;
 
+  useEffect(() => {
+    setFlipped(false);
+  }, [current?.id]);
+
   const handleRate = useCallback(
     async (rating: Rating) => {
       if (!data || !current) return;
@@ -72,8 +76,8 @@ export default function App() {
 
       const session = decrementMandatorySession(data.session);
 
-      await persist({ ...data, cards, session });
       setFlipped(false);
+      await persist({ ...data, cards, session });
     },
     [current, data, persist]
   );

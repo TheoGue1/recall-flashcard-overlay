@@ -22,7 +22,10 @@ export function StudyCard({ card, flipped, onFlip }: StudyCardProps) {
         className="card-flip flex-1 min-h-[180px] no-drag focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] rounded-[var(--radius-card)]"
         aria-label={flipped ? 'Show question' : 'Show answer'}
       >
-        <Box className={`card-flip-inner h-full ${flipped ? 'flipped' : ''}`}>
+        <Box
+          key={card.id}
+          className={`card-flip-inner h-full ${flipped ? 'flipped' : ''}`}
+        >
           <Box className="card-face glass-panel border border-[var(--color-border)] relative">
             <p className="text-base leading-relaxed whitespace-pre-wrap">
               {card.front}

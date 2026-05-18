@@ -101,6 +101,15 @@ body {
   transform: rotateY(180deg);
 }
 
+/* Prevent back face bleeding through before flip (WebKit/Electron) */
+.card-flip-inner:not(.flipped) .card-face.back {
+  visibility: hidden;
+}
+
+.card-flip-inner.flipped .card-face:not(.back) {
+  visibility: hidden;
+}
+
 @keyframes pulse-ring {
   0%,
   100% {
