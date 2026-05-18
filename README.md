@@ -40,7 +40,7 @@ Optional for building the installer:
 ### 1. Clone the repository
 
 ```powershell
-git clone https://github.com/theo13015/recall-flashcard-overlay.git
+git clone https://github.com/TheoGue1/recall-flashcard-overlay.git
 cd recall-flashcard-overlay
 ```
 

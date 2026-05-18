@@ -6,12 +6,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/theo13015/recall-flashcard-overlay.git"
+    "url": "https://github.com/TheoGue1/recall-flashcard-overlay.git"
   },
   "bugs": {
-    "url": "https://github.com/theo13015/recall-flashcard-overlay/issues"
+    "url": "https://github.com/TheoGue1/recall-flashcard-overlay/issues"
   },
-  "homepage": "https://github.com/theo13015/recall-flashcard-overlay#readme",
+  "homepage": "https://github.com/TheoGue1/recall-flashcard-overlay#readme",
   "engines": {
     "node": ">=20.19.0"
   },

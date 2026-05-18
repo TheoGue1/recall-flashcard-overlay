@@ -19,10 +19,12 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $repo = "recall-flashcard-overlay"
-$exists = & $gh repo view "theo13015/$repo" 2>$null
+$owner = "TheoGue1"
+$exists = & $gh repo view "$owner/$repo" 2>$null
 if ($LASTEXITCODE -ne 0) {
-    & $gh repo create $repo --public --source=. --remote=origin --description "Windows overlay flashcard app with spaced repetition (Anki-style SM-2)" --push
+    & $gh repo create "$owner/$repo" --public --source=. --remote=origin --description "Windows overlay flashcard app with spaced repetition (Anki-style SM-2)" --push
 } else {
+    git remote set-url origin "https://github.com/$owner/$repo.git"
     git push -u origin main
 }
-Write-Host "Done: https://github.com/theo13015/$repo"
+Write-Host "Done: https://github.com/$owner/$repo"
