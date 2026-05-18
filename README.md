@@ -210,4 +210,4 @@ Issues and pull requests are welcome. Please run `npm test` and `npm run build` 
 
 ## License
 
-[MIT](LICENSE) — Copyright (c) 2026 Theo
+[MIT](LICENSE) — Copyright (c) 2026
