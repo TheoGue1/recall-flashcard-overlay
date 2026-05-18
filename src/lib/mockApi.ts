@@ -1,3 +1,9 @@
+import {
+  sanitizeSession,
+  sanitizeSettings,
+  timerIntervalMs,
+  timerSettingsChanged,
+} from './timer';
 import type { AppData } from './types';
 
 const STORAGE_KEY = 'recall-flashcards';
@@ -19,10 +25,18 @@ const defaultData: AppData = {
   },
 };
 
+function normalize(data: AppData): AppData {
+  return {
+    ...data,
+    settings: sanitizeSettings(data.settings, defaultData.settings),
+    session: sanitizeSession(data.session, defaultData.session),
+  };
+}
+
 function load(): AppData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return { ...defaultData, ...JSON.parse(raw) };
+    if (raw) return normalize({ ...defaultData, ...JSON.parse(raw) });
   } catch {
     /* ignore */
   }
@@ -30,23 +44,39 @@ function load(): AppData {
 }
 
 function save(data: AppData) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(normalize(data)));
 }
 
-let timerId: ReturnType<typeof setInterval> | null = null;
+let timerId: ReturnType<typeof setTimeout> | null = null;
 
-function resetTimer(onFire: (remaining: number) => void) {
-  if (timerId) clearInterval(timerId);
+function clearStudyTimer() {
+  if (timerId) {
+    clearTimeout(timerId);
+    timerId = null;
+  }
+}
+
+function scheduleStudyTimer(onFire: (remaining: number) => void) {
+  clearStudyTimer();
   const data = load();
   if (!data.settings.timerEnabled) return;
-  timerId = setInterval(() => {
+
+  const ms = timerIntervalMs(data.settings.timerIntervalMinutes);
+  timerId = setTimeout(() => {
     const d = load();
-    d.session.mandatoryActive = true;
-    d.session.mandatoryRemaining = d.settings.timerCardCount;
-    d.session.lastTimerFired = Date.now();
-    save(d);
-    onFire(d.session.mandatoryRemaining);
-  }, data.settings.timerIntervalMinutes * 60 * 1000);
+    const next = normalize({
+      ...d,
+      session: {
+        ...d.session,
+        mandatoryActive: true,
+        mandatoryRemaining: d.settings.timerCardCount,
+        lastTimerFired: Date.now(),
+      },
+    });
+    save(next);
+    onFire(next.session.mandatoryRemaining);
+    scheduleStudyTimer(onFire);
+  }, ms);
 }
 
 export function installMockApi() {
@@ -54,11 +84,17 @@ export function installMockApi() {
 
   const listeners = new Set<(p: { remaining: number }) => void>();
 
+  const notifyTimer = (remaining: number) => listeners.forEach((cb) => cb({ remaining }));
+
   window.flashApi = {
     getData: async () => load(),
     saveData: async (data) => {
-      save(data);
-      resetTimer((remaining) => listeners.forEach((cb) => cb({ remaining })));
+      const prev = load();
+      const next = normalize(data);
+      save(next);
+      if (timerSettingsChanged(prev.settings, next.settings)) {
+        scheduleStudyTimer(notifyTimer);
+      }
       return true;
     },
     pickCsv: async () => {
@@ -84,7 +120,7 @@ export function installMockApi() {
     },
     onTimerFired: (cb) => {
       listeners.add(cb);
-      resetTimer((remaining) => listeners.forEach((l) => l({ remaining })));
+      scheduleStudyTimer(notifyTimer);
       return () => listeners.delete(cb);
     },
     onMandatoryBlocked: () => () => {},

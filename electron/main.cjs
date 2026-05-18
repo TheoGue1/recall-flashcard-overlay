@@ -14,6 +14,12 @@ const {
   shouldBlockWindowClose,
   shouldShowWindowOnLaunch,
 } = require('./session.cjs');
+const {
+  sanitizeSettings,
+  sanitizeSession,
+  timerIntervalMs,
+  timerSettingsChanged,
+} = require('./timer.cjs');
 
 const isDev = process.env.NODE_ENV === 'development';
 let mainWindow = null;
@@ -46,8 +52,14 @@ function loadData() {
       return {
         ...DEFAULT_DATA,
         ...parsed,
-        settings: { ...DEFAULT_DATA.settings, ...parsed.settings },
-        session: { ...DEFAULT_DATA.session, ...parsed.session },
+        settings: sanitizeSettings(
+          { ...DEFAULT_DATA.settings, ...parsed.settings },
+          DEFAULT_DATA.settings
+        ),
+        session: sanitizeSession(
+          { ...DEFAULT_DATA.session, ...parsed.session },
+          DEFAULT_DATA.session
+        ),
       };
     }
   } catch (e) {
@@ -145,13 +157,23 @@ function createTray() {
   tray.on('double-click', () => showStudyWindow());
 }
 
-function resetTimer() {
-  if (timerHandle) clearInterval(timerHandle);
+function clearStudyTimer() {
+  if (timerHandle) {
+    clearTimeout(timerHandle);
+    timerHandle = null;
+  }
+}
+
+function scheduleStudyTimer() {
+  clearStudyTimer();
   const data = loadData();
   if (!data.settings.timerEnabled) return;
 
-  const ms = data.settings.timerIntervalMinutes * 60 * 1000;
-  timerHandle = setInterval(() => triggerMandatorySession(), ms);
+  const ms = timerIntervalMs(data.settings.timerIntervalMinutes);
+  timerHandle = setTimeout(() => {
+    triggerMandatorySession();
+    scheduleStudyTimer();
+  }, ms);
 }
 
 function showStudyWindow() {
@@ -184,9 +206,16 @@ function registerIpc() {
 
   ipcMain.handle('save-data', (_, payload) => {
     const prev = loadData();
-    saveData(payload);
-    resetTimer();
-    if (shouldHideWindowAfterSave(prev.session, payload.session)) {
+    const normalized = {
+      ...payload,
+      settings: sanitizeSettings(payload.settings, DEFAULT_DATA.settings),
+      session: sanitizeSession(payload.session, DEFAULT_DATA.session),
+    };
+    saveData(normalized);
+    if (timerSettingsChanged(prev.settings, normalized.settings)) {
+      scheduleStudyTimer();
+    }
+    if (shouldHideWindowAfterSave(prev.session, normalized.session)) {
       hideStudyWindow();
     }
     return true;
@@ -217,7 +246,7 @@ app.whenReady().then(() => {
   registerIpc();
   createWindow();
   createTray();
-  resetTimer();
+  scheduleStudyTimer();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -230,5 +259,5 @@ app.on('window-all-closed', (e) => {
 });
 
 app.on('before-quit', () => {
-  if (timerHandle) clearInterval(timerHandle);
+  clearStudyTimer();
 });

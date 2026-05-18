@@ -55,7 +55,10 @@ export function SettingsPanel({
             max={240}
             value={settings.timerIntervalMinutes}
             onChange={(e) =>
-              update('timerIntervalMinutes', Math.max(5, Number(e.target.value)))
+              update(
+                'timerIntervalMinutes',
+                Math.min(240, Math.max(5, Number(e.target.value)))
+              )
             }
             className="mt-1 w-full px-3 py-2 rounded-[var(--radius-btn)] bg-white/5 border border-[var(--color-border)] text-sm"
           />

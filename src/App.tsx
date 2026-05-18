@@ -35,8 +35,20 @@ export default function App() {
     installMockApi();
     window.flashApi?.getData().then(setData);
 
-    const unsubTimer = window.flashApi?.onTimerFired(() => {
-      window.flashApi?.getData().then(setData);
+    const unsubTimer = window.flashApi?.onTimerFired((payload) => {
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              session: {
+                ...prev.session,
+                mandatoryActive: true,
+                mandatoryRemaining: payload.remaining,
+                lastTimerFired: Date.now(),
+              },
+            }
+          : prev
+      );
       setView('study');
       setToast('Time for a study break!');
       setTimeout(() => setToast(null), 4000);
@@ -160,12 +172,18 @@ export default function App() {
         }}
       />
 
-      {isMandatorySessionActive(data.session) && (
-        <MandatoryBanner
-          remaining={data.session.mandatoryRemaining}
-          total={mandatoryTotal}
-        />
-      )}
+      <Box
+        className={`shrink-0 mx-3 mt-2 overflow-hidden transition-[max-height] duration-200 ${
+          isMandatorySessionActive(data.session) ? 'max-h-24' : 'max-h-0'
+        }`}
+      >
+        {isMandatorySessionActive(data.session) && (
+          <MandatoryBanner
+            remaining={data.session.mandatoryRemaining}
+            total={mandatoryTotal}
+          />
+        )}
+      </Box>
 
       {toast && (
         <Box className="mx-3 mt-2 px-3 py-1.5 text-xs text-center rounded-lg bg-[var(--color-accent-soft)] text-[var(--color-accent)] animate-slide-up">
@@ -209,14 +227,14 @@ export default function App() {
       )}
 
       {view === 'study' && current && (
-        <>
+        <Box className="flex-1 flex flex-col min-h-0">
           <StudyCard
             card={current}
             flipped={flipped}
             onFlip={() => setFlipped((f) => !f)}
           />
           <RatingBar visible={flipped} onRate={handleRate} />
-        </>
+        </Box>
       )}
 
       {view === 'study' && data.cards.length > 0 && (

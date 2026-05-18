@@ -1,0 +1,40 @@
+import { describe, expect, it } from 'vitest';
+import { sanitizeSettings, timerIntervalMs, timerSettingsChanged } from './timer.cjs';
+
+const defaults = {
+  timerEnabled: true,
+  timerIntervalMinutes: 30,
+  timerCardCount: 5,
+  learningStepsMinutes: [1, 10],
+  graduatingIntervalDays: 1,
+  easyIntervalDays: 4,
+};
+
+describe('timerIntervalMs', () => {
+  it('clamps corrupt huge minute values below Node timeout max', () => {
+    expect(timerIntervalMs(51111)).toBe(240 * 60 * 1000);
+    expect(timerIntervalMs(51111)).toBeLessThanOrEqual(2_147_483_647);
+  });
+
+  it('returns 30 minutes in ms for default', () => {
+    expect(timerIntervalMs(30)).toBe(30 * 60 * 1000);
+  });
+});
+
+describe('sanitizeSettings', () => {
+  it('clamps timer interval to 5–240 minutes', () => {
+    expect(sanitizeSettings({ timerIntervalMinutes: 51111 }, defaults).timerIntervalMinutes).toBe(
+      240
+    );
+    expect(sanitizeSettings({ timerIntervalMinutes: 1 }, defaults).timerIntervalMinutes).toBe(5);
+  });
+});
+
+describe('timerSettingsChanged', () => {
+  it('detects timer setting updates', () => {
+    expect(timerSettingsChanged(defaults, { ...defaults, timerIntervalMinutes: 60 })).toBe(
+      true
+    );
+    expect(timerSettingsChanged(defaults, { ...defaults, timerCardCount: 10 })).toBe(false);
+  });
+});
