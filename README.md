@@ -1,6 +1,6 @@
 # Recall
 
-**Recall** is a Windows desktop overlay for spaced-repetition flashcards. It stays on top of your work, uses Anki-style SM-2 scheduling, supports CSV import, and can nudge you on a timer to complete a short study session.
+**Recall** is a Windows desktop flashcard app for spaced repetition. It runs quietly in the system tray and pops up on a schedule for short study sessions, uses Anki-style SM-2 scheduling, and supports CSV import.
 
 ![Windows](https://img.shields.io/badge/platform-Windows%2010%2F11-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -8,17 +8,18 @@
 
 ## Features
 
-- **Always-on-top overlay** — frameless window with acrylic-style glass (Windows 10/11)
+- **Tray-first, popup study** — stays hidden between sessions; the window appears when a timer fires or you choose **Study now**
+- **Frameless glass UI** — acrylic-style panel (Windows 10/11) you can drag anywhere on screen
 - **Spaced repetition (SM-2)** — Again, Hard, Good, Easy with learning steps and ease factor
 - **CSV import** — bulk load decks (`front,back` or `question,answer`)
 - **Manual card entry** — add one card at a time from the UI
-- **Study timer** — e.g. every 30 minutes, complete 5 cards before you can hide the window
+- **Study timer** — e.g. every 30 minutes, complete 5 cards; the window hides again when you are done
 - **System tray** — show, trigger study, or quit from the tray icon
 - **Local data** — all cards stored on your machine (no account, no cloud)
 
 ## Screenshots
 
-> Place the overlay anywhere on screen. It remembers your cards between sessions.
+> The study window pops up for timed sessions, then returns to the tray. Open it anytime via the tray icon.
 
 ## Requirements (Windows)
 
@@ -64,7 +65,7 @@ npm run build
 npm start
 ```
 
-### 5. Build a Windows installer (optional)
+### 5. Build a Windows installer
 
 Produces an NSIS installer under `release/`:
 
@@ -74,12 +75,30 @@ npm run dist
 
 Install from `release\Recall Setup x.x.x.exe`. Windows SmartScreen may warn on unsigned builds — choose **More info → Run anyway**, or sign the binary for distribution.
 
+If `npm run dist` fails on Windows with a symbolic-link error during code signing, the project disables executable signing for local builds (`signAndEditExecutable: false`). You can also set `CSC_IDENTITY_AUTO_DISCOVERY=false` in your shell before building.
+
+### 6. Run tests
+
+```powershell
+npm test
+```
+
+## Install from the built installer
+
+After `npm run dist`, run the installer in `release\`:
+
+```
+release\Recall Setup 1.0.0.exe
+```
+
+Recall installs like a normal Windows app and starts in the **system tray** (no window until a study reminder or **Show** from the tray menu).
+
 ## First-time setup
 
-1. Launch the app — a small overlay appears at the bottom-right of your screen.
-2. **Import a deck**: Settings (gear) → **Import CSV**, or use the sample [`example-deck.csv`](example-deck.csv).
+1. Launch the app — it starts in the system tray (bottom-right). No window appears until you study or open it from the tray.
+2. **Import a deck**: tray → **Show**, then Settings (gear) → **Import CSV**, or use the sample [`example-deck.csv`](example-deck.csv).
 3. **Study**: click the card to flip, then rate with buttons or keys `1`–`4`.
-4. **Timer** (optional): Settings → enable reminders, set interval (minutes) and cards per session.
+4. **Timer** (optional): Settings → enable reminders, set interval (minutes) and cards per session. When the timer fires, the window pops up; after you finish the quota, it hides again.
 
 ## CSV format
 
@@ -128,11 +147,12 @@ Adjust learning steps in **Settings → Spaced repetition**.
 
 When enabled, a background timer fires every *N* minutes (default 30). The app will:
 
-1. Bring the overlay to the front
+1. **Pop up** the study window and focus it (the app does not stay always-on-top between sessions)
 2. Show a **Study break** banner
-3. Require you to rate *M* cards (default 5) before hiding or closing
+3. Require you to rate *M* cards (default 5) before you can hide or close during that session
+4. **Hide the window** automatically when the quota is complete, until the next reminder
 
-During a mandatory session, cards that are not yet “due” can still be shown so you can finish the quota.
+During a mandatory session, cards that are not yet “due” can still be shown so you can finish the quota. Use tray → **Show** anytime to study voluntarily without waiting for the timer.
 
 ## Data & privacy
 
@@ -146,10 +166,11 @@ To back up: copy that file. To reset: delete it while the app is closed.
 
 ## Windows-specific notes
 
-- **Always on top**: the overlay stays above normal windows; use the tray icon or taskbar to focus it.
+- **Tray by default**: Recall runs in the background. The study window only appears when the timer fires, you choose **Study now**, or **Show** from the tray.
+- **Not always-on-top**: the window behaves like a normal app so it does not cover your work between sessions.
 - **Acrylic / Mica**: on Windows 11, the window uses `backgroundMaterial: 'acrylic'` when supported; otherwise a translucent dark panel is used.
-- **Hide vs quit**: clicking **×** hides to tray; use tray → **Quit** to exit fully.
-- **Multiple monitors**: drag the overlay by the title bar (top strip) to reposition.
+- **Hide vs quit**: clicking **×** hides to tray (blocked during an active mandatory session). Use tray → **Quit** to exit fully.
+- **Multiple monitors**: drag the study window by the title bar (top strip) to reposition.
 - **Antivirus**: Electron apps are sometimes flagged heuristically; building from source avoids third-party installers.
 
 ## Troubleshooting
@@ -159,6 +180,8 @@ To back up: copy that file. To reset: delete it while the app is closed.
 | Blank window on `npm start` | Run `npm run build` first, or use `npm run dev` |
 | `ERR_CONNECTION_REFUSED` | You ran `npm start` without a build; use `npm run dev` or build first |
 | Timer never fires | Check Settings → timer enabled; restart app after changing interval |
+| Window never appears | Use tray → **Show** or **Study now**; wait for the next timer interval |
+| Window closed after studying | Expected — mandatory sessions auto-hide when complete |
 | CSV import empty | Ensure `front` and `back` columns exist and rows are not blank |
 | Node engine warnings | Upgrade to Node 20.19+ or 22.12+ |
 
@@ -170,18 +193,20 @@ To back up: copy that file. To reset: delete it while the app is closed.
 | `npm run build` | Compile TypeScript and bundle UI to `dist/` |
 | `npm start` | Run Electron against production `dist/` |
 | `npm run dist` | Build Windows NSIS installer |
+| `npm test` | Run unit tests (Vitest) |
+| `npm run test:watch` | Run tests in watch mode |
 | `npm run lint` | Run ESLint |
 
 ## Tech stack
 
-- [Electron](https://www.electronjs.org/) — desktop shell, overlay, tray, timers
+- [Electron](https://www.electronjs.org/) — desktop shell, tray, popup window, timers
 - [React](https://react.dev/) + [Vite](https://vitejs.dev/) — UI
 - [Tailwind CSS](https://tailwindcss.com/) — styling
 - [Papa Parse](https://www.papaparse.com/) — CSV import
 
 ## Contributing
 
-Issues and pull requests are welcome. Please run `npm run build` before submitting.
+Issues and pull requests are welcome. Please run `npm test` and `npm run build` before submitting.
 
 ## License
 
