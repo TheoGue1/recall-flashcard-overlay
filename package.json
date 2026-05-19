@@ -31,7 +31,9 @@
     "start": "electron .",
     "dist": "npm run build && electron-builder --win",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "icons": "node scripts/generate-icons.mjs",
+    "screenshots": "node scripts/capture-screenshots.mjs"
   },
   "dependencies": {
     "papaparse": "^5.5.3",
@@ -54,6 +56,9 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
+    "playwright": "^1.60.0",
+    "png-to-ico": "^3.0.1",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4.1.8",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
@@ -65,14 +70,20 @@
     "appId": "com.recall.flashcard-overlay",
     "productName": "Recall",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "build"
     },
     "files": [
       "dist/**/*",
-      "electron/**/*"
+      "electron/**/*",
+      "build/icon.ico",
+      "build/icon.png"
     ],
     "win": {
-      "target": ["nsis"],
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.ico",
       "signAndEditExecutable": false
     },
     "nsis": {

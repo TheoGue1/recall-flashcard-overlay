@@ -1,5 +1,9 @@
 # Recall
 
+<p align="center">
+  <img src="build/icon.png" alt="Recall app icon" width="96" height="96" />
+</p>
+
 **Recall** is a Windows desktop flashcard app for spaced repetition. It runs quietly in the system tray and pops up on a schedule for short study sessions, uses Anki-style SM-2 scheduling, and supports CSV import.
 
 ![Windows](https://img.shields.io/badge/platform-Windows%2010%2F11-blue)
@@ -19,7 +23,17 @@
 
 ## Screenshots
 
-> The study window pops up for timed sessions, then returns to the tray. Open it anytime via the tray icon.
+| Study (question) | Study (answer + ratings) |
+|---|---|
+| ![Study front](docs/screenshots/study-front.png) | ![Study back](docs/screenshots/study-back.png) |
+
+| Study break reminder | Settings |
+|---|---|
+| ![Study break](docs/screenshots/study-break.png) | ![Settings](docs/screenshots/settings.png) |
+
+The study window pops up for timed sessions, then returns to the tray. Open it anytime via the tray icon.
+
+To regenerate screenshots after UI changes: run `npm run dev` in one terminal, then `npm run screenshots` in another.
 
 ## Requirements (Windows)
 
@@ -206,6 +220,8 @@ To back up: copy that file. To reset: delete it while the app is closed.
 | `npm run dist` | Build Windows NSIS installer |
 | `npm test` | Run unit tests (Vitest) |
 | `npm run test:watch` | Run tests in watch mode |
+| `npm run icons` | Generate `build/icon.ico` from `build/icon-1024.png` |
+| `npm run screenshots` | Capture README screenshots (requires `npm run dev`) |
 | `npm run lint` | Run ESLint |
 
 ## Tech stack

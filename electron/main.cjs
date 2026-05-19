@@ -73,8 +73,18 @@ function saveData(data) {
   fs.writeFileSync(dataPath, JSON.stringify(data, null, 2), 'utf8');
 }
 
+function loadAppIcon() {
+  const iconPath = path.join(__dirname, '../build/icon.png');
+  if (!fs.existsSync(iconPath)) {
+    return nativeImage.createEmpty();
+  }
+  const image = nativeImage.createFromPath(iconPath);
+  return image.isEmpty() ? nativeImage.createEmpty() : image;
+}
+
 function createWindow() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  const appIcon = loadAppIcon();
 
   mainWindow = new BrowserWindow({
     width: 420,
@@ -87,6 +97,7 @@ function createWindow() {
     resizable: true,
     skipTaskbar: false,
     show: false,
+    icon: appIcon.isEmpty() ? undefined : appIcon,
     backgroundColor: '#00000000',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -129,9 +140,9 @@ function createWindow() {
 }
 
 function createTray() {
-  const icon = nativeImage.createEmpty();
+  const icon = loadAppIcon();
   tray = new Tray(icon);
-  tray.setToolTip('Flashcard Overlay');
+  tray.setToolTip('Recall');
   tray.setContextMenu(
     require('electron').Menu.buildFromTemplate([
       {
