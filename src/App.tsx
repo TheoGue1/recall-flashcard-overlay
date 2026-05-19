@@ -161,6 +161,14 @@ export default function App() {
       <TitleBar
         dueCount={dueCount}
         totalCount={data.cards.length}
+        studyBreak={
+          mandatoryMode
+            ? {
+                remaining: data.session.mandatoryRemaining,
+                total: mandatoryTotal,
+              }
+            : undefined
+        }
         onSettings={() => setView(view === 'settings' ? 'study' : 'settings')}
         onMinimize={() => api?.minimize()}
         onClose={async () => {
