@@ -4,11 +4,19 @@
   <img src="build/icon.png" alt="Recall app icon" width="96" height="96" />
 </p>
 
-**Recall** is a Windows desktop flashcard app for spaced repetition. It runs quietly in the system tray and pops up on a schedule for short study sessions, uses Anki-style SM-2 scheduling, and supports CSV import.
+**Recall** is a cross-platform desktop flashcard app for spaced repetition (Windows, macOS, and Linux). It runs quietly in the system tray and pops up on a schedule for short study sessions, uses Anki-style SM-2 scheduling, and supports CSV import.
 
-![Windows](https://img.shields.io/badge/platform-Windows%2010%2F11-blue)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Node](https://img.shields.io/badge/node-%3E%3D20.19-brightgreen)
+
+## Download
+
+Pre-built installers are on **[GitHub Releases](https://github.com/TheoGue1/recall-flashcard-overlay/releases)** (Windows `.exe`, macOS `.dmg`, Linux `.AppImage`).
+
+Windows is the primary, tested platform. macOS and Linux builds are provided but have not been manually verified — see release notes for details.
+
+To build from source instead, see [Quick start](#quick-start-from-source) below.
 
 ## Features
 
@@ -35,19 +43,14 @@ The study window pops up for timed sessions, then returns to the tray. Open it a
 
 To regenerate screenshots after UI changes: run `npm run dev` in one terminal, then `npm run screenshots` in another.
 
-## Requirements (Windows)
+## Requirements
 
 | Requirement | Notes |
 |-------------|--------|
-| **OS** | Windows 10 (1903+) or Windows 11, 64-bit |
-| **Node.js** | 20.19+ or 22.12+ ([nodejs.org](https://nodejs.org/)) |
-| **npm** | Comes with Node |
+| **OS** | Windows 10+, macOS, or Linux (64-bit) |
+| **Node.js** | 20.19+ or 22.12+ — only needed to [build from source](#quick-start-from-source) |
 | **RAM** | ~200 MB while running |
-| **Disk** | ~500 MB with dev dependencies; ~150 MB installed app |
-
-Optional for building the installer:
-
-- [Windows Build Tools](https://github.com/nodejs/node-gyp#on-windows) if native modules fail (usually not needed for this project)
+| **Disk** | ~150 MB installed; ~500 MB with dev dependencies |
 
 ## Quick start (from source)
 
@@ -79,33 +82,21 @@ npm run build
 npm start
 ```
 
-### 5. Build a Windows installer
-
-Produces an NSIS installer under `release/`:
+### 5. Build an installer locally
 
 ```powershell
-npm run dist
+npm run dist        # Windows
+npm run dist:mac    # macOS
+npm run dist:linux  # Linux
 ```
 
-Install from `release\Recall Setup x.x.x.exe`. Windows SmartScreen may warn on unsigned builds — choose **More info → Run anyway**, or sign the binary for distribution.
-
-If `npm run dist` fails on Windows with a symbolic-link error during code signing, the project disables executable signing for local builds (`signAndEditExecutable: false`). You can also set `CSC_IDENTITY_AUTO_DISCOVERY=false` in your shell before building.
+Output lands in `release/`. On Windows, SmartScreen may warn on unsigned builds — choose **More info → Run anyway**. If signing fails, set `CSC_IDENTITY_AUTO_DISCOVERY=false`.
 
 ### 6. Run tests
 
 ```powershell
 npm test
 ```
-
-## Install from the built installer
-
-After `npm run dist`, run the installer in `release\`:
-
-```
-release\Recall Setup 1.0.0.exe
-```
-
-Recall installs like a normal Windows app and starts in the **system tray** (no window until a study reminder or **Show** from the tray menu).
 
 ## First-time setup
 
@@ -218,6 +209,8 @@ To back up: copy that file. To reset: delete it while the app is closed.
 | `npm run build` | Compile TypeScript and bundle UI to `dist/` |
 | `npm start` | Run Electron against production `dist/` |
 | `npm run dist` | Build Windows NSIS installer |
+| `npm run dist:mac` | Build macOS `.dmg` / `.zip` (local; unsigned) |
+| `npm run dist:linux` | Build Linux `.AppImage` (local) |
 | `npm test` | Run unit tests (Vitest) |
 | `npm run test:watch` | Run tests in watch mode |
 | `npm run icons` | Generate `build/icon.ico` from `build/icon-1024.png` |
@@ -234,6 +227,8 @@ To back up: copy that file. To reset: delete it while the app is closed.
 ## Contributing
 
 Issues and pull requests are welcome. Please run `npm test` and `npm run build` before submitting.
+
+Maintainers: see [docs/RELEASING.md](docs/RELEASING.md) for publishing a new version.
 
 ## License
 

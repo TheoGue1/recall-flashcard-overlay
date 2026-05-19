@@ -1,0 +1,152 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Semver increment'
+        required: true
+        type: choice
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+      draft:
+        description: 'Create as draft release'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+      - run: npm test
+
+  bump:
+    name: Bump version
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Compute next semver
+        id: version
+        run: |
+          BUMP="${{ inputs.bump }}"
+          npm version "$BUMP" --no-git-tag-version
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Next release: v$VERSION ($BUMP bump)"
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "chore(release): v${{ steps.version.outputs.version }}"
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin HEAD
+          git push origin "${{ steps.version.outputs.tag }}"
+
+  build:
+    name: Build (${{ matrix.platform }})
+    needs: bump
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: win
+          - os: macos-latest
+            platform: mac
+          - os: ubuntu-latest
+            platform: linux
+    runs-on: ${{ matrix.os }}
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.bump.outputs.tag }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+      - run: npx electron-builder --${{ matrix.platform }} --publish never
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}
+          path: release/*
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs: [bump, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist-artifacts
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.bump.outputs.tag }}
+          name: Recall ${{ needs.bump.outputs.tag }}
+          draft: ${{ inputs.draft }}
+          generate_release_notes: true
+          body: |
+            ## Downloads
+
+            | Platform | Status | Artifacts |
+            |----------|--------|-----------|
+            | **Windows** | Tested on Windows 10/11 | `.exe` installer (NSIS) |
+            | **macOS** | **Not tested** — provided as-is | `.dmg` and `.zip` |
+            | **Linux** | **Not tested** — provided as-is | `.AppImage` |
+
+            ### Notes
+
+            - **Windows** is the primary, actively tested platform.
+            - **macOS** and **Linux** builds are produced by CI but have **not been manually tested**. Report issues on [GitHub Issues](https://github.com/TheoGue1/recall-flashcard-overlay/issues).
+            - macOS builds are **unsigned**. You may need to allow the app in System Settings → Privacy & Security.
+            - Linux AppImage may require `chmod +x` before running.
+
+            ---
+
+            See the [README](https://github.com/TheoGue1/recall-flashcard-overlay#readme) for usage and CSV import instructions.
+          files: dist-artifacts/*
+          fail_on_unmatched_files: false
