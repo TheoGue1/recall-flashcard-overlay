@@ -118,6 +118,17 @@ Capital of France?,Paris
 
 Without headers, the first two columns are used as front and back.
 
+### Re-import behavior
+
+Importing a CSV **merges** into your existing deck rather than replacing it:
+
+- **Same question (front)** — updates the answer and deck in place; review progress (due date, ease, reps) is kept.
+- **New question** — appended as a new card.
+- **Duplicate rows in the CSV** — only the first row per question is used.
+- **Duplicate cards already in the deck** — collapsed on import; the copy with the most reviews is kept.
+
+After import, a toast summarizes how many cards were added, updated, skipped, or deduplicated.
+
 ## Keyboard shortcuts
 
 | Key | Action |

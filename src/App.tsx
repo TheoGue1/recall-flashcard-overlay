@@ -6,7 +6,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { AddCardForm } from './components/AddCardForm';
 import { MandatoryBanner } from './components/MandatoryBanner';
 import { EmptyState } from './components/EmptyState';
-import { parseCsvToCards } from './lib/csv';
+import { parseCsvToCards, mergeImportedCards } from './lib/csv';
 import { createCard, getStudyQueue, scheduleCard } from './lib/scheduler';
 import {
   decrementMandatorySession,
@@ -112,9 +112,16 @@ export default function App() {
         setToast('No valid rows in CSV');
         return;
       }
-      await persist({ ...data, cards: [...data.cards, ...imported] });
+      const { cards, added, updated, skippedDuplicates, removedDuplicates } =
+        mergeImportedCards(data.cards, imported);
+      await persist({ ...data, cards });
       setView('study');
-      setToast(`Imported ${imported.length} cards`);
+      const parts: string[] = [];
+      if (added) parts.push(`${added} added`);
+      if (updated) parts.push(`${updated} updated`);
+      if (skippedDuplicates) parts.push(`${skippedDuplicates} skipped`);
+      if (removedDuplicates) parts.push(`${removedDuplicates} duplicates removed`);
+      setToast(parts.length ? `Import: ${parts.join(', ')}` : 'Import: no changes');
       setTimeout(() => setToast(null), 3000);
     } catch (e) {
       setToast(e instanceof Error ? e.message : 'Import failed');
