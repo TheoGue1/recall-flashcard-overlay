@@ -10,6 +10,7 @@ const {
 const path = require('path');
 const fs = require('fs');
 const {
+  isMandatorySessionActive,
   shouldHideWindowAfterSave,
   shouldBlockWindowClose,
   shouldShowWindowOnLaunch,
@@ -27,6 +28,8 @@ let mainWindow = null;
 let tray = null;
 let timerHandle = null;
 let dataPath = '';
+/** @type {{ bounds: Electron.Rectangle; fullScreen: boolean } | null} */
+let savedWindowState = null;
 
 const DEFAULT_DATA = {
   cards: [],
@@ -34,6 +37,7 @@ const DEFAULT_DATA = {
     timerEnabled: true,
     timerIntervalMinutes: 30,
     timerCardCount: 5,
+    studyBreakFullscreen: false,
     learningStepsMinutes: [1, 10],
     graduatingIntervalDays: 1,
     easyIntervalDays: 4,
@@ -188,13 +192,45 @@ function scheduleStudyTimer() {
   }, ms);
 }
 
+function enterStudyBreakFullscreen() {
+  if (!mainWindow || savedWindowState) return;
+  savedWindowState = {
+    bounds: mainWindow.getBounds(),
+    fullScreen: mainWindow.isFullScreen(),
+  };
+  mainWindow.setFullScreen(true);
+}
+
+function exitStudyBreakFullscreen() {
+  if (!mainWindow || !savedWindowState) return;
+  const { bounds, fullScreen } = savedWindowState;
+  savedWindowState = null;
+  mainWindow.setFullScreen(false);
+  mainWindow.setBounds(bounds);
+  if (fullScreen) {
+    mainWindow.setFullScreen(true);
+  }
+}
+
+function syncStudyBreakWindow(settings, session) {
+  if (!mainWindow) return;
+  if (isMandatorySessionActive(session) && settings.studyBreakFullscreen) {
+    enterStudyBreakFullscreen();
+  } else {
+    exitStudyBreakFullscreen();
+  }
+}
+
 function showStudyWindow() {
   if (!mainWindow) return;
   mainWindow.show();
   mainWindow.focus();
+  const data = loadData();
+  syncStudyBreakWindow(data.settings, data.session);
 }
 
 function hideStudyWindow() {
+  exitStudyBreakFullscreen();
   mainWindow?.hide();
 }
 
@@ -227,6 +263,7 @@ function registerIpc() {
     if (timerSettingsChanged(prev.settings, normalized.settings)) {
       scheduleStudyTimer();
     }
+    syncStudyBreakWindow(normalized.settings, normalized.session);
     if (shouldHideWindowAfterSave(prev.session, normalized.session)) {
       hideStudyWindow();
     }

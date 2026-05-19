@@ -37,6 +37,7 @@ export function sanitizeSettings(
       defaults.timerIntervalMinutes
     ),
     timerCardCount: clampInt(settings.timerCardCount, 1, 50, defaults.timerCardCount),
+    studyBreakFullscreen: Boolean(settings.studyBreakFullscreen),
     learningStepsMinutes: steps.length ? steps : defaults.learningStepsMinutes,
     graduatingIntervalDays: clampInt(
       settings.graduatingIntervalDays,

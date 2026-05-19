@@ -49,6 +49,7 @@ function sanitizeSettings(settings, defaults) {
       50,
       defaults.timerCardCount
     ),
+    studyBreakFullscreen: Boolean(settings?.studyBreakFullscreen),
     learningStepsMinutes: steps.length ? steps : defaults.learningStepsMinutes,
     graduatingIntervalDays: clampInt(
       settings?.graduatingIntervalDays,

@@ -12,6 +12,7 @@ const defaults = {
   timerEnabled: true,
   timerIntervalMinutes: 30,
   timerCardCount: 5,
+  studyBreakFullscreen: false,
   learningStepsMinutes: [1, 10],
   graduatingIntervalDays: 1,
   easyIntervalDays: 4,
@@ -41,6 +42,13 @@ describe('sanitizeSettings', () => {
     configureTimerLimits(true);
     expect(sanitizeSettings({ timerIntervalMinutes: 1 }, defaults).timerIntervalMinutes).toBe(1);
     configureTimerLimits(false);
+  });
+
+  it('defaults study break fullscreen to false', () => {
+    expect(sanitizeSettings({}, defaults).studyBreakFullscreen).toBe(false);
+    expect(sanitizeSettings({ studyBreakFullscreen: true }, defaults).studyBreakFullscreen).toBe(
+      true
+    );
   });
 });
 

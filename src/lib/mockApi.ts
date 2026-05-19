@@ -14,6 +14,7 @@ const defaultData: AppData = {
     timerEnabled: true,
     timerIntervalMinutes: 30,
     timerCardCount: 5,
+    studyBreakFullscreen: false,
     learningStepsMinutes: [1, 10],
     graduatingIntervalDays: 1,
     easyIntervalDays: 4,

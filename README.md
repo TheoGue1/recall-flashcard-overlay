@@ -168,6 +168,8 @@ When enabled, a background timer fires every *N* minutes (default 30). The app w
 3. Require you to rate *M* cards (default 5) before you can hide or close during that session
 4. **Hide the window** automatically when the quota is complete, until the next reminder
 
+Optional: enable **Full screen on study break** in Settings to expand the window to your full display during reminders (restores the previous size when the break ends).
+
 During a mandatory session, cards that are not yet “due” can still be shown so you can finish the quota. Use tray → **Show** anytime to study voluntarily without waiting for the timer.
 
 ## Data & privacy

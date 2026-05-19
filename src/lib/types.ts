@@ -21,6 +21,7 @@ export interface AppSettings {
   timerEnabled: boolean;
   timerIntervalMinutes: number;
   timerCardCount: number;
+  studyBreakFullscreen: boolean;
   learningStepsMinutes: number[];
   graduatingIntervalDays: number;
   easyIntervalDays: number;

@@ -81,6 +81,19 @@ export function SettingsPanel({
             className="mt-1 w-full px-3 py-2 rounded-[var(--radius-btn)] bg-white/5 border border-[var(--color-border)] text-sm"
           />
         </label>
+        <label className="flex items-center gap-2 text-sm mt-3">
+          <input
+            type="checkbox"
+            checked={settings.studyBreakFullscreen}
+            onChange={(e) => update('studyBreakFullscreen', e.target.checked)}
+            className="accent-[var(--color-accent)]"
+          />
+          Full screen on study break
+        </label>
+        <p className="text-[10px] text-[var(--color-text-dim)] mt-1 ml-6">
+          Expands the window to fill your display when a reminder fires or you start a break
+          manually.
+        </p>
         {onTriggerStudyBreak && (
           <button
             type="button"
