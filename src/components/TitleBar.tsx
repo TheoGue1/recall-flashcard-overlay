@@ -1,7 +1,6 @@
 interface TitleBarProps {
   dueCount: number;
   totalCount: number;
-  studyBreak?: { remaining: number; total: number };
   onSettings: () => void;
   onMinimize: () => void;
   onClose: () => void;
@@ -10,22 +9,17 @@ interface TitleBarProps {
 export function TitleBar({
   dueCount,
   totalCount,
-  studyBreak,
   onSettings,
   onMinimize,
   onClose,
 }: TitleBarProps) {
-  const statusLabel = studyBreak
-    ? `${studyBreak.remaining} left · ${studyBreak.total} break`
-    : `${dueCount} due · ${totalCount} cards`;
-
   return (
     <div className="drag-region flex items-center justify-between px-3 py-2 border-b border-[var(--color-border)]">
       <div className="flex items-center gap-2 no-drag">
         <span className="text-lg">✦</span>
         <span className="text-sm font-semibold tracking-wide">Recall</span>
         <span className="text-xs text-[var(--color-text-muted)] px-2 py-0.5 rounded-full bg-[var(--color-accent-soft)]">
-          {statusLabel}
+          {dueCount} due · {totalCount} cards
         </span>
       </div>
       <div className="flex items-center gap-1 no-drag">

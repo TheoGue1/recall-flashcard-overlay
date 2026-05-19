@@ -223,6 +223,10 @@ export function isDue(card: Flashcard, now = Date.now()): boolean {
   return card.due <= now;
 }
 
+export function countDueCards(cards: Flashcard[], now = Date.now()): number {
+  return cards.reduce((count, card) => count + (isDue(card, now) ? 1 : 0), 0);
+}
+
 export function getStudyQueue(
   cards: Flashcard[],
   now = Date.now(),

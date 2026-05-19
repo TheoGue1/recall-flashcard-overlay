@@ -7,7 +7,12 @@ import { AddCardForm } from './components/AddCardForm';
 import { MandatoryBanner } from './components/MandatoryBanner';
 import { EmptyState } from './components/EmptyState';
 import { parseCsvToCards, mergeImportedCards } from './lib/csv';
-import { createCard, getStudyQueue, scheduleCard } from './lib/scheduler';
+import {
+  countDueCards,
+  createCard,
+  getStudyQueue,
+  scheduleCard,
+} from './lib/scheduler';
 import {
   decrementMandatorySession,
   isMandatorySessionActive,
@@ -23,6 +28,7 @@ export default function App() {
   const [view, setView] = useState<View>('study');
   const [flipped, setFlipped] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
 
   const api = window.flashApi;
 
@@ -67,13 +73,23 @@ export default function App() {
 
   const mandatoryMode = data ? isMandatorySessionActive(data.session) : false;
 
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+
   const queue = useMemo(() => {
     if (!data) return [];
-    return getStudyQueue(data.cards, Date.now(), mandatoryMode);
-  }, [data, mandatoryMode]);
+    return getStudyQueue(data.cards, now, mandatoryMode);
+  }, [data?.cards, mandatoryMode, now]);
 
   const current = queue[0] ?? null;
-  const dueCount = queue.length;
+  const dueCount = useMemo(() => {
+    if (!data) return 0;
+    const due = countDueCards(data.cards, now);
+    if (!mandatoryMode) return due;
+    return Math.max(due, data.session.mandatoryRemaining);
+  }, [data?.cards, data?.session.mandatoryRemaining, mandatoryMode, now]);
 
   useEffect(() => {
     setFlipped(false);
@@ -90,6 +106,7 @@ export default function App() {
 
       setFlipped(false);
       await persist({ ...data, cards, session });
+      setNow(Date.now());
     },
     [current, data, persist]
   );
@@ -168,14 +185,6 @@ export default function App() {
       <TitleBar
         dueCount={dueCount}
         totalCount={data.cards.length}
-        studyBreak={
-          mandatoryMode
-            ? {
-                remaining: data.session.mandatoryRemaining,
-                total: mandatoryTotal,
-              }
-            : undefined
-        }
         onSettings={() => setView(view === 'settings' ? 'study' : 'settings')}
         onMinimize={() => api?.minimize()}
         onClose={async () => {
