@@ -1,6 +1,6 @@
 {
   "name": "recall-flashcard-overlay",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Windows overlay flashcard app with spaced repetition (Anki-style SM-2)",
   "license": "MIT",
   "repository": {
