@@ -31,6 +31,10 @@ export default function App() {
   const [flipped, setFlipped] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  /** During study break: false = full due deck, true = assigned break pile only. */
+  const [breakPileFocus, setBreakPileFocus] = useState(true);
+  /** Voluntary study when nothing is due (cram / review ahead). */
+  const [cramMode, setCramMode] = useState(false);
 
   const api = window.flashApi;
 
@@ -54,6 +58,8 @@ export default function App() {
         void persist({ ...prev, session });
         return { ...prev, session };
       });
+      setBreakPileFocus(true);
+      setCramMode(false);
       setView('study');
       setToast('Time for a study break!');
       setTimeout(() => setToast(null), 4000);
@@ -73,6 +79,14 @@ export default function App() {
   const mandatoryMode = data ? isMandatorySessionActive(data.session) : false;
   const breakQueueActive =
     mandatoryMode && (data?.session.mandatoryCardIds.length ?? 0) > 0;
+  const useBreakPile = breakQueueActive && breakPileFocus;
+
+  useEffect(() => {
+    if (!breakQueueActive) {
+      setBreakPileFocus(true);
+      setCramMode(false);
+    }
+  }, [breakQueueActive]);
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 30_000);
@@ -94,21 +108,29 @@ export default function App() {
     }
   }, [data, now, persist]);
 
+  const realDueCount = useMemo(() => {
+    if (!data) return 0;
+    return countDueCards(data.cards, now);
+  }, [data?.cards, now]);
+
   const queue = useMemo(() => {
     if (!data) return [];
-    if (breakQueueActive) {
-      return getBreakStudyQueue(data.cards, data.session);
+    if (useBreakPile) {
+      const breakQueue = getBreakStudyQueue(data.cards, data.session);
+      if (breakQueue.length > 0) return breakQueue;
+    }
+    if (cramMode) {
+      return getStudyQueue(data.cards, now, true);
     }
     return getStudyQueue(data.cards, now, false);
-  }, [data?.cards, data?.session, breakQueueActive, now]);
+  }, [cramMode, data?.cards, data?.session, now, useBreakPile]);
 
   const current = queue[0] ?? null;
   const dueCount = useMemo(() => {
     if (!data) return 0;
-    const due = countDueCards(data.cards, now);
-    if (!mandatoryMode) return due;
-    return Math.max(due, data.session.mandatoryRemaining);
-  }, [data?.cards, data?.session.mandatoryRemaining, mandatoryMode, now]);
+    if (!mandatoryMode) return realDueCount;
+    return Math.max(realDueCount, data.session.mandatoryRemaining);
+  }, [data?.session.mandatoryRemaining, mandatoryMode, realDueCount]);
 
   useEffect(() => {
     setFlipped(false);
@@ -121,9 +143,10 @@ export default function App() {
       const updated = scheduleCard(current, rating, data.settings);
       const cards = data.cards.map((c) => (c.id === updated.id ? updated : c));
 
-      const session = breakQueueActive
-        ? applyBreakCardRating(data.session, current.id, rating)
-        : data.session;
+      const session =
+        breakQueueActive && data.session.mandatoryCardIds.includes(current.id)
+          ? applyBreakCardRating(data.session, current.id, rating)
+          : data.session;
 
       setFlipped(false);
       await persist({ ...data, cards, session });
@@ -131,6 +154,15 @@ export default function App() {
     },
     [breakQueueActive, current, data, persist]
   );
+
+  const showCaughtUp =
+    view === 'study' &&
+    data &&
+    data.cards.length > 0 &&
+    !current &&
+    !useBreakPile &&
+    realDueCount === 0 &&
+    !cramMode;
 
   const handleAdd = async (front: string, back: string, deck: string) => {
     if (!data) return;
@@ -220,13 +252,20 @@ export default function App() {
 
       <Box
         className={`shrink-0 mx-3 mt-2 overflow-hidden transition-[max-height] duration-200 ${
-          isMandatorySessionActive(data.session) ? 'max-h-24' : 'max-h-0'
+          isMandatorySessionActive(data.session) ? 'max-h-32' : 'max-h-0'
         }`}
       >
         {isMandatorySessionActive(data.session) && (
           <MandatoryBanner
             remaining={data.session.mandatoryRemaining}
             total={mandatoryTotal}
+            dueCount={realDueCount}
+            breakPileFocus={breakPileFocus}
+            onStudyAllDue={() => {
+              setBreakPileFocus(false);
+              setCramMode(false);
+            }}
+            onFocusBreakPile={() => setBreakPileFocus(true)}
           />
         )}
       </Box>
@@ -256,7 +295,7 @@ export default function App() {
         <EmptyState onAdd={() => setView('add')} onImport={handleImport} />
       )}
 
-      {view === 'study' && data.cards.length > 0 && !current && !breakQueueActive && (
+      {showCaughtUp && (
         <Box className="flex-1 flex flex-col items-center justify-center px-6 text-center no-drag">
           <span className="text-3xl mb-2">✓</span>
           <p className="text-sm font-medium">All caught up!</p>
@@ -265,13 +304,43 @@ export default function App() {
           </p>
           <button
             type="button"
+            onClick={() => {
+              setCramMode(true);
+              setBreakPileFocus(false);
+            }}
+            className="mt-3 text-xs text-[var(--color-accent)] hover:underline"
+          >
+            Study any card anyway
+          </button>
+          <button
+            type="button"
             onClick={() => setView('settings')}
-            className="mt-4 text-xs text-[var(--color-accent)] hover:underline"
+            className="mt-2 text-xs text-[var(--color-text-muted)] hover:underline"
           >
             Settings or import more
           </button>
         </Box>
       )}
+
+      {view === 'study' &&
+        data.cards.length > 0 &&
+        !current &&
+        useBreakPile &&
+        realDueCount > 0 && (
+          <Box className="flex-1 flex flex-col items-center justify-center px-6 text-center no-drag">
+            <p className="text-sm font-medium">Break pile empty</p>
+            <p className="text-xs text-[var(--color-text-muted)] mt-1">
+              You still have {realDueCount} due cards to study freely.
+            </p>
+            <button
+              type="button"
+              onClick={() => setBreakPileFocus(false)}
+              className="mt-3 text-xs text-[var(--color-accent)] hover:underline"
+            >
+              Study all due
+            </button>
+          </Box>
+        )}
 
       {view === 'study' && current && (
         <Box className="flex-1 flex flex-col min-h-0">

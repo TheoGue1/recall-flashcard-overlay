@@ -170,7 +170,7 @@ When enabled, a background timer fires every *N* minutes (default 30). The app w
 
 Optional: enable **Full screen on study break** in Settings to expand the window to your full display during reminders (restores the previous size when the break ends).
 
-During a mandatory session, cards that are not yet “due” can still be shown so you can finish the quota. Use tray → **Show** anytime to study voluntarily without waiting for the timer.
+During a break you work through the assigned pile by default; use **Study all due instead** on the banner to review your full due deck while the break is active (Easy on an assigned card still counts). Use tray → **Show** anytime to study voluntarily without waiting for the timer.
 
 ## Data & privacy
 
