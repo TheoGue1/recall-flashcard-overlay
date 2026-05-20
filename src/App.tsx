@@ -14,8 +14,10 @@ import {
   scheduleCard,
 } from './lib/scheduler';
 import {
-  decrementMandatorySession,
+  applyBreakCardRating,
+  getBreakStudyQueue,
   isMandatorySessionActive,
+  startStudyBreakSession,
 } from './lib/session';
 import { installMockApi } from './lib/mockApi';
 import type { AppData, Rating } from './lib/types';
@@ -41,20 +43,17 @@ export default function App() {
     installMockApi();
     window.flashApi?.getData().then(setData);
 
-    const unsubTimer = window.flashApi?.onTimerFired((payload) => {
-      setData((prev) =>
-        prev
-          ? {
-              ...prev,
-              session: {
-                ...prev.session,
-                mandatoryActive: true,
-                mandatoryRemaining: payload.remaining,
-                lastTimerFired: Date.now(),
-              },
-            }
-          : prev
-      );
+    const unsubTimer = window.flashApi?.onTimerFired(() => {
+      setData((prev) => {
+        if (!prev) return prev;
+        const session = startStudyBreakSession(
+          prev.cards,
+          prev.settings.timerCardCount,
+          Date.now()
+        );
+        void persist({ ...prev, session });
+        return { ...prev, session };
+      });
       setView('study');
       setToast('Time for a study break!');
       setTimeout(() => setToast(null), 4000);
@@ -69,19 +68,39 @@ export default function App() {
       unsubTimer?.();
       unsubBlock?.();
     };
-  }, []);
+  }, [persist]);
 
   const mandatoryMode = data ? isMandatorySessionActive(data.session) : false;
+  const breakQueueActive =
+    mandatoryMode && (data?.session.mandatoryCardIds.length ?? 0) > 0;
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 30_000);
     return () => window.clearInterval(id);
   }, []);
 
+  useEffect(() => {
+    if (!data) return;
+    const { session } = data;
+    if (
+      session.mandatoryActive &&
+      session.mandatoryCardIds.length === 0 &&
+      session.mandatoryRemaining > 0
+    ) {
+      void persist({
+        ...data,
+        session: startStudyBreakSession(data.cards, data.settings.timerCardCount, now),
+      });
+    }
+  }, [data, now, persist]);
+
   const queue = useMemo(() => {
     if (!data) return [];
-    return getStudyQueue(data.cards, now, mandatoryMode);
-  }, [data?.cards, mandatoryMode, now]);
+    if (breakQueueActive) {
+      return getBreakStudyQueue(data.cards, data.session);
+    }
+    return getStudyQueue(data.cards, now, false);
+  }, [data?.cards, data?.session, breakQueueActive, now]);
 
   const current = queue[0] ?? null;
   const dueCount = useMemo(() => {
@@ -102,13 +121,15 @@ export default function App() {
       const updated = scheduleCard(current, rating, data.settings);
       const cards = data.cards.map((c) => (c.id === updated.id ? updated : c));
 
-      const session = decrementMandatorySession(data.session);
+      const session = breakQueueActive
+        ? applyBreakCardRating(data.session, current.id, rating)
+        : data.session;
 
       setFlipped(false);
       await persist({ ...data, cards, session });
       setNow(Date.now());
     },
-    [current, data, persist]
+    [breakQueueActive, current, data, persist]
   );
 
   const handleAdd = async (front: string, back: string, deck: string) => {
@@ -178,7 +199,8 @@ export default function App() {
     );
   }
 
-  const mandatoryTotal = data.settings.timerCardCount;
+  const mandatoryTotal =
+    data.session.mandatoryCardIds.length || data.settings.timerCardCount;
 
   return (
     <Box className="h-full flex flex-col glass-panel rounded-2xl m-1 overflow-hidden">
@@ -234,7 +256,7 @@ export default function App() {
         <EmptyState onAdd={() => setView('add')} onImport={handleImport} />
       )}
 
-      {view === 'study' && data.cards.length > 0 && !current && (
+      {view === 'study' && data.cards.length > 0 && !current && !breakQueueActive && (
         <Box className="flex-1 flex flex-col items-center justify-center px-6 text-center no-drag">
           <span className="text-3xl mb-2">✓</span>
           <p className="text-sm font-medium">All caught up!</p>

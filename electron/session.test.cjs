@@ -1,16 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import {
-  decrementMandatorySession,
+  applyStudyBreakRating,
   isMandatorySessionActive,
   shouldBlockWindowClose,
   shouldHideWindowAfterSave,
   shouldShowWindowOnLaunch,
 } from './session.cjs';
 
-const idle = { mandatoryActive: false, mandatoryRemaining: 0, lastTimerFired: null };
-const active = (remaining) => ({
+const idle = {
+  mandatoryActive: false,
+  mandatoryRemaining: 0,
+  mandatoryCardIds: [],
+  mandatoryEasyDoneIds: [],
+  lastTimerFired: null,
+};
+
+const active = (cardIds, easyDoneIds = []) => ({
   mandatoryActive: true,
-  mandatoryRemaining: remaining,
+  mandatoryRemaining: cardIds.length - easyDoneIds.length,
+  mandatoryCardIds: cardIds,
+  mandatoryEasyDoneIds: easyDoneIds,
   lastTimerFired: 1,
 });
 
@@ -19,27 +28,27 @@ describe('isMandatorySessionActive', () => {
     expect(isMandatorySessionActive(idle)).toBe(false);
   });
 
-  it('is true when cards remain', () => {
-    expect(isMandatorySessionActive(active(3))).toBe(true);
-  });
-
-  it('is false when active flag set but no cards left', () => {
-    expect(isMandatorySessionActive(active(0))).toBe(false);
+  it('is true when assigned cards remain', () => {
+    expect(isMandatorySessionActive(active(['a', 'b', 'c']))).toBe(true);
   });
 });
 
-describe('decrementMandatorySession', () => {
-  it('does not change idle session', () => {
-    expect(decrementMandatorySession(idle)).toEqual(idle);
+describe('applyStudyBreakRating', () => {
+  it('decrements only when an assigned card is rated Easy', () => {
+    expect(applyStudyBreakRating(active(['a', 'b', 'c']), 'a', 'good')).toEqual(
+      active(['a', 'b', 'c'])
+    );
+    expect(applyStudyBreakRating(active(['a', 'b', 'c']), 'a', 'easy')).toEqual(
+      active(['a', 'b', 'c'], ['a'])
+    );
+    expect(applyStudyBreakRating(active(['a', 'b', 'c']), 'z', 'easy')).toEqual(
+      active(['a', 'b', 'c'])
+    );
   });
 
-  it('decrements remaining cards', () => {
-    expect(decrementMandatorySession(active(3))).toEqual(active(2));
-  });
-
-  it('clears mandatory when last card is rated', () => {
-    expect(decrementMandatorySession(active(1))).toEqual({
-      ...active(0),
+  it('clears mandatory when all assigned cards are Easy', () => {
+    expect(applyStudyBreakRating(active(['a']), 'a', 'easy')).toEqual({
+      ...active(['a'], ['a']),
       mandatoryActive: false,
       mandatoryRemaining: 0,
     });
@@ -47,26 +56,22 @@ describe('decrementMandatorySession', () => {
 });
 
 describe('shouldHideWindowAfterSave', () => {
-  it('hides when timer session completes', () => {
-    expect(shouldHideWindowAfterSave(active(1), decrementMandatorySession(active(1)))).toBe(
-      true
-    );
+  it('hides when all assigned cards are Easy', () => {
+    const prev = active(['a']);
+    const next = applyStudyBreakRating(prev, 'a', 'easy');
+    expect(shouldHideWindowAfterSave(prev, next)).toBe(true);
   });
 
   it('does not hide when session still active', () => {
-    expect(shouldHideWindowAfterSave(active(2), decrementMandatorySession(active(2)))).toBe(
+    expect(shouldHideWindowAfterSave(active(['a', 'b']), active(['a', 'b']))).toBe(
       false
     );
-  });
-
-  it('does not hide when not in mandatory session', () => {
-    expect(shouldHideWindowAfterSave(idle, idle)).toBe(false);
   });
 });
 
 describe('shouldBlockWindowClose', () => {
   it('blocks during mandatory session', () => {
-    expect(shouldBlockWindowClose(active(2))).toBe(true);
+    expect(shouldBlockWindowClose(active(['a', 'b']))).toBe(true);
   });
 
   it('allows close when idle', () => {
@@ -76,7 +81,7 @@ describe('shouldBlockWindowClose', () => {
 
 describe('shouldShowWindowOnLaunch', () => {
   it('shows only if mandatory session was interrupted', () => {
-    expect(shouldShowWindowOnLaunch(active(2))).toBe(true);
+    expect(shouldShowWindowOnLaunch(active(['a', 'b']))).toBe(true);
     expect(shouldShowWindowOnLaunch(idle)).toBe(false);
   });
 });

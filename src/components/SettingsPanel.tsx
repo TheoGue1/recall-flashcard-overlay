@@ -68,8 +68,13 @@ export function SettingsPanel({
             className="mt-1 w-full px-3 py-2 rounded-[var(--radius-btn)] bg-white/5 border border-[var(--color-border)] text-sm"
           />
         </label>
+        <p className="text-[10px] text-[var(--color-text-dim)] mb-2">
+          Each break assigns that many cards. Work through the pile until each is{' '}
+          <strong className="text-[var(--color-easy)]">Easy</strong> — Good sends a card to
+          the back, Again to the middle, Hard toward the end.
+        </p>
         <label className="block text-xs text-[var(--color-text-muted)]">
-          Cards required per reminder
+          Cards assigned per reminder
           <input
             type="number"
             min={1}

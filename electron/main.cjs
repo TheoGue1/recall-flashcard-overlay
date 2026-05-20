@@ -45,6 +45,9 @@ const DEFAULT_DATA = {
   session: {
     mandatoryActive: false,
     mandatoryRemaining: 0,
+    mandatoryCardIds: [],
+    mandatoryEasyDoneIds: [],
+    breakQueueOrder: [],
     lastTimerFired: null,
   },
 };
@@ -164,6 +167,9 @@ function createTray() {
           const data = loadData();
           data.session.mandatoryActive = false;
           data.session.mandatoryRemaining = 0;
+          data.session.mandatoryCardIds = [];
+          data.session.mandatoryEasyDoneIds = [];
+          data.session.breakQueueOrder = [];
           saveData(data);
           app.quit();
         },
@@ -238,6 +244,9 @@ function triggerMandatorySession() {
   const data = loadData();
   data.session.mandatoryActive = true;
   data.session.mandatoryRemaining = data.settings.timerCardCount;
+  data.session.mandatoryCardIds = [];
+  data.session.mandatoryEasyDoneIds = [];
+  data.session.breakQueueOrder = [];
   data.session.lastTimerFired = Date.now();
   saveData(data);
 

@@ -165,7 +165,7 @@ When enabled, a background timer fires every *N* minutes (default 30). The app w
 
 1. **Pop up** the study window and focus it (the app does not stay always-on-top between sessions)
 2. Show a **Study break** banner
-3. Require you to rate *M* cards (default 5) before you can hide or close during that session
+3. Assign *M* specific cards (default 5) into a break pile — you cycle through them until each is rated **Easy** (Good → back of pile, Again → middle, Hard → later). SRS still applies to every rating
 4. **Hide the window** automatically when the quota is complete, until the next reminder
 
 Optional: enable **Full screen on study break** in Settings to expand the window to your full display during reminders (restores the previous size when the break ends).

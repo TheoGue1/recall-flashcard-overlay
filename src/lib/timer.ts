@@ -1,3 +1,4 @@
+import { normalizeBreakQueueOrder } from './session';
 import type { AppSettings, AppSession } from './types';
 
 export const MAX_TIMEOUT_MS = 2_147_483_647;
@@ -54,11 +55,31 @@ export function sanitizeSettings(
   };
 }
 
+function sanitizeIdList(ids: unknown, maxLen: number): string[] {
+  if (!Array.isArray(ids)) return [];
+  return ids
+    .filter((id): id is string => typeof id === 'string' && id.length > 0)
+    .slice(0, maxLen);
+}
+
 export function sanitizeSession(
   session: Partial<AppSession>,
   defaults: AppSession
 ): AppSession {
-  const mandatoryRemaining = clampInt(session.mandatoryRemaining, 0, 50, 0);
+  const mandatoryCardIds = sanitizeIdList(session.mandatoryCardIds, 50);
+  const mandatoryEasyDoneIds = sanitizeIdList(session.mandatoryEasyDoneIds, 50).filter(
+    (id) => mandatoryCardIds.includes(id)
+  );
+  const breakQueueOrder = normalizeBreakQueueOrder(
+    mandatoryCardIds,
+    mandatoryEasyDoneIds,
+    sanitizeIdList(session.breakQueueOrder, 50)
+  );
+  const pendingFromIds = mandatoryCardIds.length - mandatoryEasyDoneIds.length;
+  const mandatoryRemaining =
+    mandatoryCardIds.length > 0
+      ? pendingFromIds
+      : clampInt(session.mandatoryRemaining, 0, 50, 0);
   const mandatoryActive =
     Boolean(session.mandatoryActive) && mandatoryRemaining > 0;
 
@@ -67,6 +88,9 @@ export function sanitizeSession(
     ...session,
     mandatoryActive,
     mandatoryRemaining,
+    mandatoryCardIds,
+    mandatoryEasyDoneIds,
+    breakQueueOrder,
     lastTimerFired:
       typeof session.lastTimerFired === 'number' ? session.lastTimerFired : null,
   };

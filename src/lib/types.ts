@@ -30,6 +30,12 @@ export interface AppSettings {
 export interface AppSession {
   mandatoryActive: boolean;
   mandatoryRemaining: number;
+  /** Card IDs assigned when this study break started. */
+  mandatoryCardIds: string[];
+  /** Subset of assigned cards already rated Easy this break. */
+  mandatoryEasyDoneIds: string[];
+  /** In-break study order (reordered by Again / Hard / Good). */
+  breakQueueOrder: string[];
   lastTimerFired: number | null;
 }
 

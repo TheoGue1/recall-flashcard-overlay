@@ -70,13 +70,31 @@ function sanitizeSettings(settings, defaults) {
  * @param {Record<string, unknown>} session
  * @param {Record<string, unknown>} defaults
  */
+function sanitizeIdList(ids, maxLen) {
+  if (!Array.isArray(ids)) return [];
+  return ids
+    .filter((id) => typeof id === 'string' && id.length > 0)
+    .slice(0, maxLen);
+}
+
 function sanitizeSession(session, defaults) {
-  const mandatoryRemaining = clampInt(
-    session?.mandatoryRemaining,
-    0,
-    50,
-    0
+  const mandatoryCardIds = sanitizeIdList(session?.mandatoryCardIds, 50);
+  const mandatoryEasyDoneIds = sanitizeIdList(session?.mandatoryEasyDoneIds, 50).filter(
+    (id) => mandatoryCardIds.includes(id)
   );
+  let breakQueueOrder = sanitizeIdList(session?.breakQueueOrder, 50).filter(
+    (id) => mandatoryCardIds.includes(id) && !mandatoryEasyDoneIds.includes(id)
+  );
+  for (const id of mandatoryCardIds) {
+    if (!mandatoryEasyDoneIds.includes(id) && !breakQueueOrder.includes(id)) {
+      breakQueueOrder.push(id);
+    }
+  }
+  const pendingFromIds = mandatoryCardIds.length - mandatoryEasyDoneIds.length;
+  const mandatoryRemaining =
+    mandatoryCardIds.length > 0
+      ? pendingFromIds
+      : clampInt(session?.mandatoryRemaining, 0, 50, 0);
   const mandatoryActive =
     Boolean(session?.mandatoryActive) && mandatoryRemaining > 0;
 
@@ -85,6 +103,9 @@ function sanitizeSession(session, defaults) {
     ...session,
     mandatoryActive,
     mandatoryRemaining,
+    mandatoryCardIds,
+    mandatoryEasyDoneIds,
+    breakQueueOrder,
     lastTimerFired:
       typeof session?.lastTimerFired === 'number' ? session.lastTimerFired : null,
   };

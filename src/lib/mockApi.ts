@@ -1,3 +1,4 @@
+import { startStudyBreakSession } from './session';
 import {
   sanitizeSession,
   sanitizeSettings,
@@ -22,6 +23,9 @@ const defaultData: AppData = {
   session: {
     mandatoryActive: false,
     mandatoryRemaining: 0,
+    mandatoryCardIds: [],
+    mandatoryEasyDoneIds: [],
+    breakQueueOrder: [],
     lastTimerFired: null,
   },
 };
@@ -67,12 +71,7 @@ function scheduleStudyTimer(onFire: (remaining: number) => void) {
     const d = load();
     const next = normalize({
       ...d,
-      session: {
-        ...d.session,
-        mandatoryActive: true,
-        mandatoryRemaining: d.settings.timerCardCount,
-        lastTimerFired: Date.now(),
-      },
+      session: startStudyBreakSession(d.cards, d.settings.timerCardCount),
     });
     save(next);
     onFire(next.session.mandatoryRemaining);
@@ -129,12 +128,7 @@ export function installMockApi() {
       const d = load();
       const next = normalize({
         ...d,
-        session: {
-          ...d.session,
-          mandatoryActive: true,
-          mandatoryRemaining: d.settings.timerCardCount,
-          lastTimerFired: Date.now(),
-        },
+        session: startStudyBreakSession(d.cards, d.settings.timerCardCount),
       });
       save(next);
       notifyTimer(next.session.mandatoryRemaining);
